@@ -11,6 +11,8 @@ message GetWeatherRequest {
 
 message GetWeatherResponse {
     double temperature = 1;
+    double humidity = 2;
+    double elevation = 3;
 }
 
 service WeatherService {

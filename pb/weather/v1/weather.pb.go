@@ -76,6 +76,8 @@ func (x *GetWeatherRequest) GetLongitude() float64 {
 type GetWeatherResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Temperature   float64                `protobuf:"fixed64,1,opt,name=temperature,proto3" json:"temperature,omitempty"`
+	Humidity      float64                `protobuf:"fixed64,2,opt,name=humidity,proto3" json:"humidity,omitempty"`
+	Elevation     float64                `protobuf:"fixed64,3,opt,name=elevation,proto3" json:"elevation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -117,6 +119,20 @@ func (x *GetWeatherResponse) GetTemperature() float64 {
 	return 0
 }
 
+func (x *GetWeatherResponse) GetHumidity() float64 {
+	if x != nil {
+		return x.Humidity
+	}
+	return 0
+}
+
+func (x *GetWeatherResponse) GetElevation() float64 {
+	if x != nil {
+		return x.Elevation
+	}
+	return 0
+}
+
 var File_pb_weather_v1_weather_proto protoreflect.FileDescriptor
 
 const file_pb_weather_v1_weather_proto_rawDesc = "" +
@@ -125,9 +141,11 @@ const file_pb_weather_v1_weather_proto_rawDesc = "" +
 	"weather.v1\"M\n" +
 	"\x11GetWeatherRequest\x12\x1a\n" +
 	"\blatitude\x18\x01 \x01(\x01R\blatitude\x12\x1c\n" +
-	"\tlongitude\x18\x02 \x01(\x01R\tlongitude\"6\n" +
+	"\tlongitude\x18\x02 \x01(\x01R\tlongitude\"p\n" +
 	"\x12GetWeatherResponse\x12 \n" +
-	"\vtemperature\x18\x01 \x01(\x01R\vtemperature2]\n" +
+	"\vtemperature\x18\x01 \x01(\x01R\vtemperature\x12\x1a\n" +
+	"\bhumidity\x18\x02 \x01(\x01R\bhumidity\x12\x1c\n" +
+	"\televation\x18\x03 \x01(\x01R\televation2]\n" +
 	"\x0eWeatherService\x12K\n" +
 	"\n" +
 	"GetWeather\x12\x1d.weather.v1.GetWeatherRequest\x1a\x1e.weather.v1.GetWeatherResponseB)Z'weather-tracker/pb/weather/v1;weatherv1b\x06proto3"
