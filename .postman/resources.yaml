@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: b99b0df3-bafe-4a8b-8c49-6291f7874c97
+
+localResources:
+  specs:
+    - ../pb/weather/v1/weather.proto
