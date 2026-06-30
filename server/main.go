@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type result struct {
+type Result struct {
 	Geohash     string
 	Temperature float64
 	Humidity    float64
@@ -55,9 +55,9 @@ func openDB(connString string) (*sql.DB, error) {
 
 }
 
-func (s *server) GetTemperature(ctx context.Context, lat, long float64) (result, bool) {
+func (s *server) GetTemperature(ctx context.Context, lat, long float64) (Result, bool) {
 
-	var res = result{}
+	var res = Result{}
 
 	hash := geohash.EncodeWithPrecision(lat, long, 6)
 
@@ -80,7 +80,7 @@ func (s *server) GetTemperature(ctx context.Context, lat, long float64) (result,
 
 }
 
-func (s *server) SaveTemperature(ctx context.Context, result result) error {
+func (s *server) SaveTemperature(ctx context.Context, result Result) error {
 
 	query := `
 	INSERT INTO 
@@ -97,7 +97,7 @@ func (s *server) SaveTemperature(ctx context.Context, result result) error {
 
 func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest) (*weatherv1.GetWeatherResponse, error) {
 
-	var result result
+	var result Result
 	// Check the database with lat and long to get the value.
 	result, ok := s.GetTemperature(ctx, in.Latitude, in.Longitude)
 	if ok {
@@ -111,18 +111,20 @@ func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest
 
 	// If not available in database - get the value from OpenMeteo
 	log.Println("Cache Miss - Retrieving data from OpenMeteo API...")
-	// Hardcoded mock value - I'll replace it with OpenMeteo on the integration step.
-	result.Temperature = 35.0
-	result.Humidity = 30.0
-	result.Elevation = 5.0
+
+	err := GetWeatherData(in.Latitude, in.Longitude, &result)
+	if err != nil {
+		log.Printf("Unable to get data from OpenMeteo - try again in a few moments: %v\n", err)
+		return nil, err
+	}
 
 	// Save new value to database
-	err := s.SaveTemperature(ctx, result)
+	err = s.SaveTemperature(ctx, result)
 	if err != nil {
 		log.Printf("Failed to save result to database %v\n", err)
 	}
 
-	log.Printf("Request Temperature for Latitude (%v) and Longitude (%v) - Got %.2f C\n", in.Latitude, in.Longitude, result.Temperature)
+	log.Printf("Request Temperature for Latitude (%v) and Longitude (%v) - Got Tempreture %.2f C, Humidity %.2f, & Elevation %.1fm (above sea level)\n", in.Latitude, in.Longitude, result.Temperature, result.Humidity, result.Elevation)
 
 	return &weatherv1.GetWeatherResponse{
 		Temperature: float64(result.Temperature),
