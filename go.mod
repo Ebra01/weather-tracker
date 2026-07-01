@@ -1,15 +1,18 @@
-module example/weather-tracker
+module weather-tracker
 
 go 1.26.4
 
 require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mmcloughlin/geohash v0.10.0
+	github.com/oapi-codegen/runtime v1.4.2
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
 )
 
 require (
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect

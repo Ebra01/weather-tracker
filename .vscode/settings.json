@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "openapi:v3": "file:///Users/ibrahim.alblooshi/Projects/training/weather-tracker/client/openapi.yaml"
+    }
+}

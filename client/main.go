@@ -1,16 +1,90 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"encoding/json"
+	"log"
+	"net/http"
+	"time"
 
-	weatherv1 "example/weather-tracker/pb/weather/v1"
+	"weather-tracker/client/api"
+	client "weather-tracker/client/api"
+	weatherv1 "weather-tracker/pb/weather/v1"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-func main() {
-	req := &weatherv1.GetWeatherRequest{
-		Latitude:  37.7749,
-		Longitude: -122.4194,
+type WeatherServer struct {
+	grpcClient weatherv1.WeatherServiceClient
+}
+
+func NewWeatherServer(client weatherv1.WeatherServiceClient) *WeatherServer {
+	return &WeatherServer{
+		grpcClient: client,
+	}
+}
+
+func (s *WeatherServer) GetWeather(w http.ResponseWriter, r *http.Request, params client.GetWeatherParams) {
+
+	var (
+		temperature float64
+		humidity    float64
+		elevation   float64
+	)
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	grpcReq := &weatherv1.GetWeatherRequest{
+		Latitude:  params.Lat,
+		Longitude: params.Lon,
 	}
 
-	fmt.Printf("Client executing request for  Latitude & Longitude: %f, %f\n", req.GetLatitude(), req.GetLongitude())
+	grpcResp, err := s.grpcClient.GetWeather(ctx, grpcReq)
+	if err != nil {
+		log.Printf("[GET] /weather?lat=%f&lon=%f - Error: %v", params.Lat, params.Lon, err)
+		http.Error(w, "Failed to fetch weather data from backend service", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[GET] /weather?lat=%f&lon=%f - OK - T: %.2f, H: %.2f, E: %.2f", params.Lat, params.Lon, grpcResp.Temperature, grpcResp.Humidity, grpcResp.Elevation)
+
+	temperature = grpcResp.Temperature
+	humidity = grpcResp.Humidity
+	elevation = grpcResp.Elevation
+
+	responseBody := api.WeatherResponse{
+		Temperature: &temperature,
+		Humidity:    &humidity,
+		Elevation:   &elevation,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(responseBody)
+
+}
+
+func main() {
+
+	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Did not connect to gRPC server: %v", err)
+	}
+
+	defer conn.Close()
+
+	grpcClient := weatherv1.NewWeatherServiceClient(conn)
+
+	weatherService := NewWeatherServer(grpcClient)
+
+	mux := http.NewServeMux()
+	api.HandlerFromMux(weatherService, mux)
+
+	log.Println("API Gateway listening on :8080...")
+	if err := http.ListenAndServe(":8080", mux); err != nil {
+		log.Fatalf("Could not start server: %v", err)
+	}
+
 }

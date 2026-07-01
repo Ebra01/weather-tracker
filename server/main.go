@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	weatherv1 "example/weather-tracker/pb/weather/v1"
 	"log"
 	"net"
 	"os"
+
+	weatherv1 "weather-tracker/pb/weather/v1"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/mmcloughlin/geohash"
