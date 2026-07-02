@@ -56,6 +56,13 @@ func openDB(connString string) (*sql.DB, error) {
 
 }
 
+func envOrDefault(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
+
 func (s *server) GetTemperature(ctx context.Context, lat, long float64) (Result, bool) {
 
 	var res = Result{}
@@ -136,7 +143,7 @@ func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest
 
 func main() {
 
-	connStr := "postgres://web:pass@localhost:5432/weatherapp?sslmode=disable"
+	connStr := envOrDefault("DATABASE_URL", "postgres://web:pass@localhost:5432/weatherapp?sslmode=disable")
 
 	db, err := openDB(connStr)
 	if err != nil {

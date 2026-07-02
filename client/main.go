@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	client "weather-tracker/client/api"
@@ -22,6 +23,13 @@ func NewWeatherServer(client weatherv1.WeatherServiceClient) *WeatherServer {
 	return &WeatherServer{
 		grpcClient: client,
 	}
+}
+
+func envOrDefault(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
 }
 
 func (s *WeatherServer) GetWeather(w http.ResponseWriter, r *http.Request, params client.GetWeatherParams) {
@@ -67,7 +75,9 @@ func (s *WeatherServer) GetWeather(w http.ResponseWriter, r *http.Request, param
 
 func main() {
 
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcAddr := envOrDefault("GRPC_ADDR", "localhost:50051")
+
+	conn, err := grpc.NewClient(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Did not connect to gRPC server: %v", err)
 	}
