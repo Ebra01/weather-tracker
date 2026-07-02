@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"weather-tracker/client/api"
 	client "weather-tracker/client/api"
 	weatherv1 "weather-tracker/pb/weather/v1"
 
@@ -54,7 +53,7 @@ func (s *WeatherServer) GetWeather(w http.ResponseWriter, r *http.Request, param
 	humidity = grpcResp.Humidity
 	elevation = grpcResp.Elevation
 
-	responseBody := api.WeatherResponse{
+	responseBody := client.WeatherResponse{
 		Temperature: &temperature,
 		Humidity:    &humidity,
 		Elevation:   &elevation,
@@ -80,7 +79,7 @@ func main() {
 	weatherService := NewWeatherServer(grpcClient)
 
 	mux := http.NewServeMux()
-	api.HandlerFromMux(weatherService, mux)
+	client.HandlerFromMux(weatherService, mux)
 
 	log.Println("API Gateway listening on :8080...")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
