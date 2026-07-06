@@ -15,12 +15,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type WeatherServer struct {
+type WeatherClient struct {
 	grpcClient weatherv1.WeatherServiceClient
 }
 
-func NewWeatherServer(client weatherv1.WeatherServiceClient) *WeatherServer {
-	return &WeatherServer{
+func NewWeatherClient(client weatherv1.WeatherServiceClient) *WeatherClient {
+	return &WeatherClient{
 		grpcClient: client,
 	}
 }
@@ -32,7 +32,7 @@ func envOrDefault(key, fallback string) string {
 	return fallback
 }
 
-func (s *WeatherServer) GetWeather(w http.ResponseWriter, r *http.Request, params client.GetWeatherParams) {
+func (s *WeatherClient) GetWeather(w http.ResponseWriter, r *http.Request, params client.GetWeatherParams) {
 
 	var (
 		temperature float64
@@ -86,7 +86,7 @@ func main() {
 
 	grpcClient := weatherv1.NewWeatherServiceClient(conn)
 
-	weatherService := NewWeatherServer(grpcClient)
+	weatherService := NewWeatherClient(grpcClient)
 
 	mux := http.NewServeMux()
 	client.HandlerFromMux(weatherService, mux)
