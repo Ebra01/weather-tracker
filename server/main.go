@@ -16,6 +16,9 @@ import (
 	"google.golang.org/grpc"
 )
 
+// 5 characters of geohash gives ~4.9km precision, which is suitable for weather data.
+const GEOHASH_PRECISION = 5
+
 type Result struct {
 	Geohash     string
 	Temperature float64
@@ -66,7 +69,7 @@ func envOrDefault(key, fallback string) string {
 
 func (s *server) GetTemperature(ctx context.Context, lat, long float64) (Result, bool) {
 
-	hash := geohash.EncodeWithPrecision(lat, long, 6)
+	hash := geohash.EncodeWithPrecision(lat, long, GEOHASH_PRECISION)
 
 	row, err := s.queries.GetWeather(ctx, hash)
 	if err != nil {
