@@ -39,5 +39,12 @@ services:
     depends_on:
       - server
 
+  test:
+    build:
+      context: .
+      target: test
+    profiles:
+      - test
+
 volumes:
   postgres-data:

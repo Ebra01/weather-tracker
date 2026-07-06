@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.26-alpine AS build
+FROM golang:1.26-alpine AS source
 
 WORKDIR /src
 
@@ -8,6 +8,12 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+
+FROM source AS test
+
+CMD ["go", "test", "./..."]
+
+FROM source AS build
 
 ARG APP=server
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/weather-app ./${APP}
