@@ -9,6 +9,7 @@ import (
 	"os"
 
 	weatherv1 "weather-tracker/pb/weather/v1"
+	weatherdb "weather-tracker/server/weatherDB"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/mmcloughlin/geohash"
@@ -24,7 +25,7 @@ type Result struct {
 
 type server struct {
 	weatherv1.UnimplementedWeatherServiceServer
-	db *sql.DB
+	queries *weatherdb.Queries
 }
 
 func openDB(connString string) (*sql.DB, error) {
@@ -65,42 +66,33 @@ func envOrDefault(key, fallback string) string {
 
 func (s *server) GetTemperature(ctx context.Context, lat, long float64) (Result, bool) {
 
-	var res = Result{}
-
 	hash := geohash.EncodeWithPrecision(lat, long, 6)
 
-	res.Geohash = hash
-
-	query := `
-	SELECT temperature, humidity, elevation
-	FROM weather
-	WHERE geohash = $1`
-
-	err := s.db.QueryRowContext(ctx, query, hash).Scan(&res.Temperature, &res.Humidity, &res.Elevation)
+	row, err := s.queries.GetWeather(ctx, hash)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return res, false
+			return Result{Geohash: hash}, false
 		}
-		return res, false
+		return Result{Geohash: hash}, false
 	}
 
-	return res, true
+	return Result{
+		Geohash:     hash,
+		Temperature: row.Temperature,
+		Humidity:    row.Humidity,
+		Elevation:   row.Elevation,
+	}, true
 
 }
 
 func (s *server) SaveTemperature(ctx context.Context, result Result) error {
 
-	query := `
-	INSERT INTO 
-	weather (geohash, temperature, humidity, elevation)
-	VALUES ($1, $2, $3, $4)`
-
-	_, err := s.db.ExecContext(ctx, query, result.Geohash, result.Temperature, result.Humidity, result.Elevation)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.queries.SetWeather(ctx, weatherdb.SetWeatherParams{
+		Geohash:     result.Geohash,
+		Temperature: result.Temperature,
+		Humidity:    result.Humidity,
+		Elevation:   result.Elevation,
+	})
 }
 
 func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest) (*weatherv1.GetWeatherResponse, error) {
@@ -162,7 +154,9 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 
-	weatherv1.RegisterWeatherServiceServer(grpcServer, &server{db: db})
+	queries := weatherdb.New(db)
+
+	weatherv1.RegisterWeatherServiceServer(grpcServer, &server{queries: queries})
 
 	log.Printf("gRPC Weather Server is running on port %s", port)
 	if err := grpcServer.Serve(lis); err != nil {
