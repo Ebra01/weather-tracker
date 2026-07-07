@@ -47,6 +47,9 @@ The client uses `GRPC_ADDR` to communicate with the gRPC server. The server uses
 │   └── schema.sql
 ├── docs/
 │   └── openapi.yaml
+├── internal/
+│   └── assert/
+│       └── assert.go
 ├── pb/
 │   └── weather/v1/
 │       ├── weather.proto
@@ -60,14 +63,15 @@ The client uses `GRPC_ADDR` to communicate with the gRPC server. The server uses
 │   ├── main.go
 │   ├── main_test.go
 │   ├── openmeteo.go
-│   └── openmeteo_test.go
+│   ├── openmeteo_test.go
+│   └── testutils_test.go
 ├── Dockerfile
+├── README.md
 ├── docker-compose.yml
 ├── go.mod
 ├── go.sum
 ├── makefile
 └── sqlc.yaml
-└── README.md
 ```
 
 ### Why This Structure
@@ -209,6 +213,35 @@ Docker Compose defines four services:
 - `test`: a profiled one-shot Go test runner built from the Dockerfile `test` stage.
 
 The `test` service uses a Compose profile so normal app startup does not run tests every time. Use it only when you explicitly want containerized tests.
+
+## Testing
+
+The test suite covers the HTTP client gateway, gRPC server behavior, database cache interactions, and Open-Meteo response handling. It uses a fake gRPC client for client tests, a small fake SQL driver for server cache tests, a fake HTTP transport for Open-Meteo tests, and a shared `internal/assert` helper for concise assertions. Because of this, the tests can run without starting PostgreSQL, Docker Compose, or the real Open-Meteo API.
+
+Run all tests:
+
+```bash
+go test ./...
+```
+
+Run tests with package-level coverage:
+
+```bash
+go test -cover ./...
+```
+
+Generate a coverage profile and print function-level coverage in the terminal:
+
+```bash
+go test -coverprofile=coverage.out ./...
+go tool cover -func=coverage.out
+```
+
+To inspect coverage in a browser:
+
+```bash
+go tool cover -html=coverage.out
+```
 
 ## Development Commands
 
