@@ -44,10 +44,6 @@ The client uses `GRPC_ADDR` to communicate with the gRPC server. The server uses
 │   │   ├── main.go
 │   │   └── main_test.go
 │   └── server/
-│       ├── weatherdb/
-│       │   ├── db.go
-│       │   ├── models.go
-│       │   └── queries.sql.go
 │       ├── main.go
 │       ├── main_test.go
 │       ├── openmeteo.go
@@ -59,8 +55,12 @@ The client uses `GRPC_ADDR` to communicate with the gRPC server. The server uses
 ├── docs/
 │   └── openapi.yaml
 ├── internal/
-│   └── assert/
-│       └── assert.go
+│   ├── assert/
+│   │   └── assert.go
+│   └── weatherdb/
+│       ├── db.go
+│       ├── models.go
+│       └── queries.sql.go
 ├── pb/
 │   └── weather/v1/
 │       ├── weather.proto
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS weather (
 
 ## Database Queries
 
-The SQL queries live in `db/queries.sql` and are used by `sqlc` to generate the typed Go database package in `cmd/server/weatherdb`.
+The SQL queries live in `db/queries.sql` and are used by `sqlc` to generate the typed Go database package in `internal/weatherdb`.
 
 ### GetWeather
 
@@ -200,7 +200,7 @@ The server is responsible for:
 - saving fresh weather data through the generated `sqlc` query package;
 - returning temperature, humidity, and elevation to the HTTP client over gRPC.
 
-The server uses `database/sql` with the pgx driver and generated `sqlc` methods from `cmd/server/weatherdb`.
+The server uses `database/sql` with the pgx driver and generated `sqlc` methods from `internal/weatherdb`.
 
 ## Docker Setup
 
