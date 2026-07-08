@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -103,12 +104,16 @@ func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest
 		return weatherResponseFromResult(result), nil
 	}
 
+	var errMsg string
+
 	if err != nil {
-		log.Printf("Failed to get data from database (Defaulting to OpenMeteo API): %v\n", err)
+		errMsg = fmt.Sprintf("Failed to get data from database: %v - (Defaulting to OpenMeteo API)\n", err)
+	} else {
+		errMsg = "No data found in database - (Defaulting to OpenMeteo API)\n"
 	}
 
 	// If not available in database - get the value from OpenMeteo
-	log.Println("Cache Miss - Retrieving data from OpenMeteo API...")
+	log.Printf("Cache Miss - %s", errMsg)
 
 	result, err = GetWeatherData(in.Latitude, in.Longitude, &result)
 	if err != nil {
