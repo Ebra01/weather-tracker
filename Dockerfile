@@ -15,7 +15,7 @@ CMD ["go", "test", "./..."]
 
 FROM source AS build
 
-ARG APP=server
+ARG APP=cmd/server
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/weather-app ./${APP}
 
 FROM alpine:3.22

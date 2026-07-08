@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	weatherdb "weather-tracker/server/weatherDB"
+	"weather-tracker/internal/weatherdb"
 )
 
 type testDBState struct {

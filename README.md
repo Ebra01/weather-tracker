@@ -21,7 +21,7 @@ GET /weather?lat=25.2048&lon=55.2708
 
 The request flow is:
 
-1. The HTTP client receives `lat` and `lon` through the OpenAPI-generated handler in `client/api`.
+1. The HTTP client receives `lat` and `lon` through the OpenAPI-generated handler in `cmd/client/api`.
 2. The client creates a gRPC `GetWeatherRequest` and sends it to the backend server.
 3. The backend converts the latitude and longitude into a geohash with precision `5` (each geohash value represents an area of ~24 square km).
 4. The backend checks the database (PostgreSQL) for a recent cached weather row for that geohash.
@@ -37,11 +37,22 @@ The client uses `GRPC_ADDR` to communicate with the gRPC server. The server uses
 
 ```text
 .
-├── client/
-│   ├── api/
-│   │   └── api.gen.go
-│   ├── main.go
-│   └── main_test.go
+├── cmd/
+│   ├── client/
+│   │   ├── api/
+│   │   │   └── api.gen.go
+│   │   ├── main.go
+│   │   └── main_test.go
+│   └── server/
+│       ├── weatherdb/
+│       │   ├── db.go
+│       │   ├── models.go
+│       │   └── queries.sql.go
+│       ├── main.go
+│       ├── main_test.go
+│       ├── openmeteo.go
+│       ├── openmeteo_test.go
+│       └── testutils_test.go
 ├── db/
 │   ├── queries.sql
 │   └── schema.sql
@@ -55,16 +66,6 @@ The client uses `GRPC_ADDR` to communicate with the gRPC server. The server uses
 │       ├── weather.proto
 │       ├── weather.pb.go
 │       └── weather_grpc.pb.go
-├── server/
-│   ├── weatherDB/
-│   │   ├── db.go
-│   │   ├── models.go
-│   │   └── queries.sql.go
-│   ├── main.go
-│   ├── main_test.go
-│   ├── openmeteo.go
-│   ├── openmeteo_test.go
-│   └── testutils_test.go
 ├── Dockerfile
 ├── README.md
 ├── docker-compose.yml
@@ -119,7 +120,7 @@ CREATE TABLE IF NOT EXISTS weather (
 
 ## Database Queries
 
-The SQL queries live in `db/queries.sql` and are used by `sqlc` to generate the typed Go database package in `server/weatherDB`.
+The SQL queries live in `db/queries.sql` and are used by `sqlc` to generate the typed Go database package in `cmd/server/weatherdb`.
 
 ### GetWeather
 
@@ -175,7 +176,7 @@ Successful response:
 }
 ```
 
-The HTTP route and request parameter binding are generated from `docs/openapi.yaml`. The client does not talk to PostgreSQL or Open-Meteo directly. Its job is to validate the HTTP request shape, call the gRPC backend, and return JSON.
+The HTTP route and request parameter binding are generated from `docs/openapi.yaml` into `cmd/client/api`. The client does not talk to PostgreSQL or Open-Meteo directly. Its job is to validate the HTTP request shape, call the gRPC backend, and return JSON.
 
 If the gRPC backend returns an error, the client returns HTTP `500`.
 
@@ -199,7 +200,7 @@ The server is responsible for:
 - saving fresh weather data through the generated `sqlc` query package;
 - returning temperature, humidity, and elevation to the HTTP client over gRPC.
 
-The server uses `database/sql` with the pgx driver and generated `sqlc` methods from `server/weatherDB`.
+The server uses `database/sql` with the pgx driver and generated `sqlc` methods from `cmd/server/weatherdb`.
 
 ## Docker Setup
 

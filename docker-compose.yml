@@ -20,7 +20,7 @@ services:
     build:
       context: .
       args:
-        APP: server
+        APP: cmd/server
     environment:
       DATABASE_URL: postgres://web:pass@db:5432/weatherapp?sslmode=disable
     depends_on:
@@ -31,7 +31,7 @@ services:
     build:
       context: .
       args:
-        APP: client
+        APP: cmd/client
     environment:
       GRPC_ADDR: server:50051
     ports:

@@ -3,7 +3,7 @@
 //   sqlc v1.31.1
 // source: queries.sql
 
-package weather_db
+package weatherdb
 
 import (
 	"context"

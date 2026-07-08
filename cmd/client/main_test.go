@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	api "weather-tracker/client/api"
+	api "weather-tracker/cmd/client/api"
 	"weather-tracker/internal/assert"
 	weatherv1 "weather-tracker/pb/weather/v1"
 

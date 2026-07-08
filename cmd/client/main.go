@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	client "weather-tracker/client/api"
+	client "weather-tracker/cmd/client/api"
 	weatherv1 "weather-tracker/pb/weather/v1"
 
 	"google.golang.org/grpc"

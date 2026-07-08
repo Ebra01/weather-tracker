@@ -5,6 +5,6 @@ sql:
     queries: "db/queries.sql"
     gen:
       go:
-        package: "weather_db"
-        out: "server/weatherDB"
+        package: "weatherdb"
+        out: "internal/weatherdb"
         sql_package: "database/sql"

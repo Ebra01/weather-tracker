@@ -8,8 +8,8 @@ import (
 	"net"
 	"os"
 
+	"weather-tracker/internal/weatherdb"
 	weatherv1 "weather-tracker/pb/weather/v1"
-	weatherdb "weather-tracker/server/weatherDB"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/mmcloughlin/geohash"
