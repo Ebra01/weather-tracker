@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mmcloughlin/geohash"
 	"weather-tracker/internal/assert"
 	weatherv1 "weather-tracker/pb/weather/v1"
+
+	"github.com/mmcloughlin/geohash"
 )
 
 func TestEnvOrDefault(t *testing.T) {
@@ -53,13 +54,14 @@ func TestServerGetTemperature(t *testing.T) {
 		long = 55.2708
 	)
 
-	hash := geohash.EncodeWithPrecision(lat, long, GEOHASH_PRECISION)
+	hash := geohash.EncodeWithPrecision(lat, long, geoHashPrecision)
 
 	tests := []struct {
 		name      string
 		queryRow  []driver.Value
 		queryErr  error
 		wantFound bool
+		wantErr   bool
 		want      Result
 	}{
 		{
@@ -88,6 +90,7 @@ func TestServerGetTemperature(t *testing.T) {
 			name:      "Database error",
 			queryErr:  errors.New("database unavailable"),
 			wantFound: false,
+			wantErr:   true,
 			want:      Result{Geohash: hash},
 		},
 	}
@@ -100,7 +103,14 @@ func TestServerGetTemperature(t *testing.T) {
 			}
 			srv := &server{queries: newTestQueries(t, state)}
 
-			got, found := srv.GetTemperature(context.Background(), lat, long)
+			got, found, err := srv.GetTemperature(context.Background(), lat, long)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+			} else {
+				assert.Nil(t, err)
+			}
 
 			assert.Equal(t, found, tt.wantFound)
 			assert.Equal(t, got.Geohash, tt.want.Geohash)
@@ -221,7 +231,53 @@ func TestServerGetWeatherCacheMissFetchesAndSaves(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantGeohash := geohash.EncodeWithPrecision(lat, long, GEOHASH_PRECISION)
+	wantGeohash := geohash.EncodeWithPrecision(lat, long, geoHashPrecision)
+
+	assert.Equal(t, resp.Temperature, 31.4)
+	assert.Equal(t, resp.Humidity, 52.0)
+	assert.Equal(t, resp.Elevation, 12.5)
+	assert.True(t, state.execCalled)
+	assert.Equal(t, state.execArgs[0].Value.(string), wantGeohash)
+	assert.Equal(t, state.execArgs[1].Value.(float64), 31.4)
+	assert.Equal(t, state.execArgs[2].Value.(float64), 52.0)
+	assert.Equal(t, state.execArgs[3].Value.(float64), 12.5)
+}
+
+func TestServerGetWeatherDatabaseErrorFetchesAndSaves(t *testing.T) {
+	const (
+		lat  = 25.2048
+		long = 55.2708
+	)
+
+	state := &testDBState{queryErr: errors.New("database unavailable")}
+	srv := &server{queries: newTestQueries(t, state)}
+
+	setTestHTTPClient(t, func(r *http.Request) (*http.Response, error) {
+		assert.Equal(t, r.URL.Host, "api.open-meteo.com")
+		assert.Equal(t, r.URL.Query().Get("latitude"), "25.2048")
+		assert.Equal(t, r.URL.Query().Get("longitude"), "55.2708")
+
+		return testHTTPResponse(http.StatusOK, `{
+			"latitude": 25.2048,
+			"longitude": 55.2708,
+			"elevation": 12.5,
+			"current": {
+				"time": "2026-07-07T10:00",
+				"temperature_2m": 31.4,
+				"relative_humidity_2m": 52
+			}
+		}`), nil
+	})
+
+	resp, err := srv.GetWeather(context.Background(), &weatherv1.GetWeatherRequest{
+		Latitude:  lat,
+		Longitude: long,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantGeohash := geohash.EncodeWithPrecision(lat, long, geoHashPrecision)
 
 	assert.Equal(t, resp.Temperature, 31.4)
 	assert.Equal(t, resp.Humidity, 52.0)

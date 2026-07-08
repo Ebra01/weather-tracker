@@ -26,7 +26,7 @@ The request flow is:
 3. The backend converts the latitude and longitude into a geohash with precision `5` (each geohash value represents an area of ~24 square km).
 4. The backend checks the database (PostgreSQL) for a recent cached weather row for that geohash.
 5. If the row exists and was created within the last 5 minutes, the server returns the cached data.
-6. If no fresh row exists, the server calls the Open-Meteo API.
+6. If no fresh row exists, or if the cache lookup fails, the server calls the Open-Meteo API.
 7. The server stores the returned weather data in the database using an upsert.
 8. The server returns the weather response over gRPC.
 9. The client converts the gRPC response to JSON and sends it back to the HTTP caller.
@@ -196,7 +196,7 @@ The server is responsible for:
 
 - converting latitude and longitude to a geohash;
 - checking PostgreSQL for a fresh cached result;
-- calling Open-Meteo when the cache misses;
+- calling Open-Meteo when the cache misses or the cache lookup fails;
 - saving fresh weather data through the generated `sqlc` query package;
 - returning temperature, humidity, and elevation to the HTTP client over gRPC.
 
@@ -204,7 +204,7 @@ The server uses `database/sql` with the pgx driver and generated `sqlc` methods 
 
 ## Docker Setup
 
-The Dockerfile is shared by both runtime services. Compose passes `APP=server` or `APP=client` as a build argument so the same Dockerfile can build either binary.
+The Dockerfile is shared by both runtime services. Compose passes `APP=cmd/server` or `APP=cmd/client` as a build argument so the same Dockerfile can build either binary.
 
 Docker Compose defines four services:
 

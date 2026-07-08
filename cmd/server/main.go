@@ -17,7 +17,7 @@ import (
 )
 
 // 5 characters of geohash gives ~4.9km precision, which is suitable for weather data.
-const GEOHASH_PRECISION = 5
+const geoHashPrecision = 5
 
 type Result struct {
 	Geohash     string
@@ -32,19 +32,6 @@ type server struct {
 }
 
 func openDB(connString string) (*sql.DB, error) {
-
-	/*
-
-		-- DATABASE TABLE SCHEMA --
-
-		TABLE: weather
-		id          - INTEGER AUTO INCREMENT
-		geohash     - Varchar(12)
-		temperature - Numeric(4, 2) - 2 point precision
-		humidity    - Numeric(4, 2) - 2 point precision
-		elevation   - Numeric(4, 2) - 2 point precision
-
-	*/
 
 	db, err := sql.Open("pgx", connString)
 	if err != nil {
@@ -67,16 +54,24 @@ func envOrDefault(key, fallback string) string {
 	return fallback
 }
 
-func (s *server) GetTemperature(ctx context.Context, lat, long float64) (Result, bool) {
+func weatherResponseFromResult(result Result) *weatherv1.GetWeatherResponse {
+	return &weatherv1.GetWeatherResponse{
+		Temperature: float64(result.Temperature),
+		Humidity:    float64(result.Humidity),
+		Elevation:   float64(result.Elevation),
+	}
+}
 
-	hash := geohash.EncodeWithPrecision(lat, long, GEOHASH_PRECISION)
+func (s *server) GetTemperature(ctx context.Context, lat, long float64) (Result, bool, error) {
+
+	hash := geohash.EncodeWithPrecision(lat, long, geoHashPrecision)
 
 	row, err := s.queries.GetWeather(ctx, hash)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return Result{Geohash: hash}, false
+			return Result{Geohash: hash}, false, nil
 		}
-		return Result{Geohash: hash}, false
+		return Result{Geohash: hash}, false, err
 	}
 
 	return Result{
@@ -84,7 +79,7 @@ func (s *server) GetTemperature(ctx context.Context, lat, long float64) (Result,
 		Temperature: row.Temperature,
 		Humidity:    row.Humidity,
 		Elevation:   row.Elevation,
-	}, true
+	}, true, nil
 
 }
 
@@ -102,20 +97,20 @@ func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest
 
 	var result Result
 	// Check the database with lat and long to get the value.
-	result, ok := s.GetTemperature(ctx, in.Latitude, in.Longitude)
+	result, ok, err := s.GetTemperature(ctx, in.Latitude, in.Longitude)
 	if ok {
 		log.Println("Cache Hit - Retrieving data from database...")
-		return &weatherv1.GetWeatherResponse{
-			Temperature: float64(result.Temperature),
-			Humidity:    float64(result.Humidity),
-			Elevation:   float64(result.Elevation),
-		}, nil
+		return weatherResponseFromResult(result), nil
+	}
+
+	if err != nil {
+		log.Printf("Failed to get data from database (Defaulting to OpenMeteo API): %v\n", err)
 	}
 
 	// If not available in database - get the value from OpenMeteo
 	log.Println("Cache Miss - Retrieving data from OpenMeteo API...")
 
-	err := GetWeatherData(in.Latitude, in.Longitude, &result)
+	result, err = GetWeatherData(in.Latitude, in.Longitude, &result)
 	if err != nil {
 		log.Printf("Unable to get data from OpenMeteo - try again in a few moments: %v\n", err)
 		return nil, err
@@ -129,11 +124,7 @@ func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest
 
 	log.Printf("Request Temperature for Latitude (%v) and Longitude (%v) - Got Tempreture %.2f C, Humidity %.2f, & Elevation %.1fm (above sea level)\n", in.Latitude, in.Longitude, result.Temperature, result.Humidity, result.Elevation)
 
-	return &weatherv1.GetWeatherResponse{
-		Temperature: float64(result.Temperature),
-		Humidity:    float64(result.Humidity),
-		Elevation:   float64(result.Elevation),
-	}, nil
+	return weatherResponseFromResult(result), nil
 }
 
 func main() {

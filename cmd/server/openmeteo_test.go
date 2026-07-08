@@ -31,8 +31,8 @@ func TestGetWeatherData(t *testing.T) {
 		}`), nil
 	})
 
-	var got Result
-	err := GetWeatherData(25.2048, 55.2708, &got)
+	var result Result
+	got, err := GetWeatherData(25.2048, 55.2708, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,8 +79,8 @@ func TestGetWeatherDataError(t *testing.T) {
 				return testHTTPResponse(tt.status, tt.body), nil
 			})
 
-			var got Result
-			err := GetWeatherData(25.2048, 55.2708, &got)
+			var result Result
+			got, err := GetWeatherData(25.2048, 55.2708, &result)
 			if err == nil {
 				t.Fatal("expected error")
 			}

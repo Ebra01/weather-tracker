@@ -21,26 +21,27 @@ type OpenMeteoResponse struct {
 	} `json:"current"`
 }
 
-func GetWeatherData(lat, long float64, result *Result) error {
+func GetWeatherData(lat, long float64, result *Result) (Result, error) {
 	url := fmt.Sprintf("https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f&current=temperature_2m,relative_humidity_2m", lat, long)
 
 	resp, err := client.Get(url)
 	if err != nil {
-		return err
+		return Result{}, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Unable to connect to Open-meteo: Status (%d) %s", resp.StatusCode, resp.Status)
+		return Result{}, fmt.Errorf("Unable to connect to Open-meteo: Status (%d) %s", resp.StatusCode, resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return Result{}, err
 	}
 
 	var weather OpenMeteoResponse
 	if err := json.Unmarshal(body, &weather); err != nil {
-		return err
+		return Result{}, err
 	}
 
 	// Populate result with data from OpenMeteo
@@ -48,5 +49,5 @@ func GetWeatherData(lat, long float64, result *Result) error {
 	result.Elevation = weather.Elevation
 	result.Humidity = weather.Current.Humidity
 
-	return nil
+	return *result, nil
 }
