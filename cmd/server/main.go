@@ -63,7 +63,7 @@ func weatherResponseFromResult(result Result) *weatherv1.GetWeatherResponse {
 	}
 }
 
-func (s *server) GetTemperature(ctx context.Context, lat, long float64) (Result, bool, error) {
+func (s *server) GetDataFromCache(ctx context.Context, lat, long float64) (Result, bool, error) {
 
 	hash := geohash.EncodeWithPrecision(lat, long, geoHashPrecision)
 
@@ -98,7 +98,7 @@ func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest
 
 	var result Result
 	// Check the database with lat and long to get the value.
-	result, ok, err := s.GetTemperature(ctx, in.Latitude, in.Longitude)
+	result, ok, err := s.GetDataFromCache(ctx, in.Latitude, in.Longitude)
 	if ok {
 		log.Println("Cache Hit - Retrieving data from database...")
 		return weatherResponseFromResult(result), nil
@@ -115,7 +115,7 @@ func (s *server) GetWeather(ctx context.Context, in *weatherv1.GetWeatherRequest
 	// If not available in database - get the value from OpenMeteo
 	log.Printf("Cache Miss - %s", errMsg)
 
-	result, err = GetWeatherData(in.Latitude, in.Longitude, &result)
+	result, err = FetchCurrentWeather(in.Latitude, in.Longitude, &result)
 	if err != nil {
 		log.Printf("Unable to get data from OpenMeteo - try again in a few moments: %v\n", err)
 		return nil, err

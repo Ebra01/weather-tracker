@@ -21,7 +21,7 @@ type OpenMeteoResponse struct {
 	} `json:"current"`
 }
 
-func GetWeatherData(lat, long float64, result *Result) (Result, error) {
+func FetchCurrentWeather(lat, long float64, result *Result) (Result, error) {
 	url := fmt.Sprintf("https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f&current=temperature_2m,relative_humidity_2m", lat, long)
 
 	resp, err := client.Get(url)

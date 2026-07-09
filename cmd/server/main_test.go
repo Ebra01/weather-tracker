@@ -103,7 +103,7 @@ func TestServerGetTemperature(t *testing.T) {
 			}
 			srv := &server{queries: newTestQueries(t, state)}
 
-			got, found, err := srv.GetTemperature(context.Background(), lat, long)
+			got, found, err := srv.GetDataFromCache(context.Background(), lat, long)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error")
