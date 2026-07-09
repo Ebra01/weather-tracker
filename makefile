@@ -19,7 +19,7 @@ generate-db: check-sqlc
 	$(SQLC) generate
 
 test:
-	$(GO) test ./...
+	$(GO) test -count=1 -v ./...
 
 docker-up:
 	docker-compose up
